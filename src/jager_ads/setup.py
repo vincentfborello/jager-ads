@@ -28,6 +28,7 @@ setup(
             'vision_node = jager_ads.vision_node:main',
             'turret_controller_node = jager_ads.turret_controller_node:main',
             'camera_node = jager_ads.camera_node:main',
+            'firing_node = jager_ads.firing_node:main',
         ],
     },
 )
