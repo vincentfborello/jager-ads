@@ -29,6 +29,7 @@ setup(
             'turret_controller_node = jager_ads.turret_controller_node:main',
             'camera_node = jager_ads.camera_node:main',
             'firing_node = jager_ads.firing_node:main',
+            'servo_hardware_node = jager_ads.servo_hardware_node:main',
         ],
     },
 )
