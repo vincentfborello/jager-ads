@@ -80,36 +80,39 @@ class TurretControllerNode(Node):
 
         # How much each PID output unit moves the servo in degrees
         # We'll tune this once hardware is connected
-        self.angle_scale = 0.05
+        self.angle_scale = 0.15
 
         # Two PID controllers — one for pan (left/right) one for tilt (up/down)
         # These Kp, Ki, Kd values are starting guesses — we'll tune them with real hardware
-        self.pan_pid = PIDController(kp=0.1, ki=0.01, kd=0.05)
-        self.tilt_pid = PIDController(kp=0.1, ki=0.01, kd=0.05)
+        self.pan_pid = PIDController(kp=0.08, ki=0.0, kd=0.0)
+        self.tilt_pid = PIDController(kp=0.08, ki=0.0, kd=0.0)
 
         self.get_logger().info('Turret controller online. Waiting for target...')
 
     def track_target(self, msg):
-        # msg.x and msg.y are the pixel coordinates of the detected target
-        # Error = how far the target is from the center of the frame
-        # Positive error = target is to the right of / below center
-        # Negative error = target is to the left of / above center
         pan_error = msg.x - self.frame_center_x
         tilt_error = msg.y - self.frame_center_y
 
-        # Feed the error into the PID controllers to get correction outputs
+        # Dead zone — ignore tiny errors caused by detection noise
+        # Only move if error is larger than 15 pixels
+        if abs(pan_error) < 15:
+            pan_error = 0
+        if abs(tilt_error) < 15:
+            tilt_error = 0
+
+        # If both errors are zero don't move at all
+        if pan_error == 0 and tilt_error == 0:
+            return
+
         pan_correction = self.pan_pid.compute(pan_error)
         tilt_correction = self.tilt_pid.compute(tilt_error)
 
-        # Apply correction to current servo angles
         self.pan_angle += pan_correction * self.angle_scale
         self.tilt_angle += tilt_correction * self.angle_scale
 
-        # Clamp angles to physical servo limits so we don't send impossible commands
         self.pan_angle = max(self.min_angle, min(self.max_angle, self.pan_angle))
         self.tilt_angle = max(self.min_angle, min(self.max_angle, self.tilt_angle))
 
-        # Package the angles into a Float32MultiArray message and publish
         cmd = Float32MultiArray()
         cmd.data = [self.pan_angle, self.tilt_angle]
         self.publisher.publish(cmd)
